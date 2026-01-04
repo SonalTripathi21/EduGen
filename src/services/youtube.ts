@@ -13,6 +13,7 @@ export async function searchVideos(query: string, limit = 3) {
             maxResults: limit,
             type: ["video"],
             relevanceLanguage: "en",
+            videoEmbeddable: "true",
         });
 
         return response.data.items?.map((item) => ({

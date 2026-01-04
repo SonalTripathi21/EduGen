@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { generateChapterContent } from "@/services/gemini";
 import { searchVideos } from "@/services/youtube";
 import { db } from "@/db";
@@ -19,9 +20,12 @@ export async function POST(req: Request) {
         // Generate Content
         const content = await generateChapterContent(chapter[0].name, course[0].name);
 
-        // Fetch Video
-        const videos = await searchVideos(`${course[0].name} ${chapter[0].name} tutorial`, 1);
+        // Fetch Video - Simplified search query for better relevance
+        const searchQuery = `${chapter[0].name} ${course[0].name} tutorial`;
+        console.log("Searching YouTube for:", searchQuery);
+        const videos = await searchVideos(searchQuery, 1);
         const videoId = videos.length > 0 ? videos[0].videoId : null;
+        console.log("Found Video ID:", videoId);
 
         // Update DB
         await db.update(chapters)
@@ -30,6 +34,9 @@ export async function POST(req: Request) {
                 videoId: videoId
             })
             .where(eq(chapters.id, chapterId));
+
+        // Revalidate course path to clear cache
+        revalidatePath(`/course/${course[0].courseId}`);
 
         return NextResponse.json({ success: true, content, videoId });
 

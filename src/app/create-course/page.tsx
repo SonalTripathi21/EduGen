@@ -100,6 +100,7 @@ export default function CreateCourse() {
                                     <option value="2 Hours">2 Hours</option>
                                     <option value="5 Hours">5 Hours</option>
                                     <option value="10 Hours">10 Hours</option>
+                                    <option value="more than 10 Hours">more than 10 Hours</option>
                                 </select>
                             </div>
                         </div>

@@ -1,7 +1,8 @@
 import Header from "@/components/Header";
 import { db } from "@/db";
 import { chapters, courses } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
+import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import ChapterView from "@/components/ChapterView";
 import Link from "next/link";
@@ -11,7 +12,17 @@ export default async function ChapterPage({ params }: { params: Promise<{ course
     const { courseId, chapterIndex } = await params;
     const index = parseInt(chapterIndex);
 
-    const course = await db.select().from(courses).where(eq(courses.courseId, courseId));
+    const user = await currentUser();
+    const userEmail = user?.primaryEmailAddress?.emailAddress;
+
+    const course = await db.select()
+        .from(courses)
+        .where(
+            and(
+                eq(courses.courseId, courseId),
+                eq(courses.userEmail, userEmail || "")
+            )
+        );
 
     if (!course || course.length === 0) {
         return redirect("/dashboard");
@@ -20,13 +31,14 @@ export default async function ChapterPage({ params }: { params: Promise<{ course
     // Get all chapters to determine current, prev, next
     const allChapters = await db.select().from(chapters)
         .where(eq(chapters.courseId, course[0].id))
-        .orderBy(chapters.chapterId);
+        .orderBy(asc(chapters.chapterId));
 
     const chapter = allChapters.find(c => c.chapterId === index);
 
     if (!chapter) {
         // If index out of bounds, maybe go back to overview
-        return redirect(`/course/${courseId}`);
+        redirect(`/course/${courseId}`);
+        return null;
     }
 
     return (
@@ -57,8 +69,8 @@ export default async function ChapterPage({ params }: { params: Promise<{ course
                     {/* Main Content */}
                     <div>
                         <ChapterView
-                            chapter={chapter}
-                            course={course[0]}
+                            chapter={chapter as any}
+                            course={course[0] as any}
                             chapterIndex={index}
                             totalChapters={allChapters.length}
                         />

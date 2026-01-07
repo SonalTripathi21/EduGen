@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { generateCourseStructure } from "@/services/gemini";
 import { db } from "@/db";
 import { courses, chapters } from "@/db/schema";
+import { currentUser } from "@clerk/nextjs/server";
 // I'll use a simple random string generator since I didn't install uuid.
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export async function POST(req: Request) {
     try {
+        const user = await currentUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { topic, level, duration, noOfChapters } = await req.json();
 
         if (!topic || !level || !duration || !noOfChapters) {
@@ -30,8 +36,8 @@ export async function POST(req: Request) {
             duration: duration,
             includeVideo: "Yes",
             courseOutput: courseLayout,
-            userName: "User", // Placeholder, add auth later if needed
-            userEmail: "user@example.com",
+            userName: user?.fullName || "User",
+            userEmail: user?.primaryEmailAddress?.emailAddress || "",
         }).returning();
 
         // 3. Save Chapters (initially empty content)

@@ -23,13 +23,6 @@ function Hero() {
                         >
                             Get Started
                         </Link>
-
-                        <Link
-                            className="block w-full rounded px-12 py-3 text-sm font-medium text-primary shadow hover:text-primary/90 focus:outline-none focus:ring active:text-red-500 sm:w-auto"
-                            href="#"
-                        >
-                            Learn More
-                        </Link>
                     </div>
                 </div>
             </div>

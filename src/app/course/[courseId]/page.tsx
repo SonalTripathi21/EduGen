@@ -1,14 +1,25 @@
 import Header from "@/components/Header";
 import { db } from "@/db";
 import { chapters, courses } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and } from "drizzle-orm";
+import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { PlayCircle, CheckCircle } from 'lucide-react';
 import { redirect } from "next/navigation";
 
 export default async function CourseOverview({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = await params;
-    const course = await db.select().from(courses).where(eq(courses.courseId, courseId));
+    const user = await currentUser();
+    const userEmail = user?.primaryEmailAddress?.emailAddress;
+
+    const course = await db.select()
+        .from(courses)
+        .where(
+            and(
+                eq(courses.courseId, courseId),
+                eq(courses.userEmail, userEmail || "")
+            )
+        );
 
     if (!course || course.length === 0) {
         return redirect("/dashboard");

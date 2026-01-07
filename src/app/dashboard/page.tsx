@@ -2,10 +2,17 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import { db } from "@/db";
 import { courses } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import { currentUser } from "@clerk/nextjs/server";
 
 export default async function Dashboard() {
-    const userCourses = await db.select().from(courses).orderBy(desc(courses.createdAt));
+    const user = await currentUser();
+    const userEmail = user?.primaryEmailAddress?.emailAddress;
+
+    const userCourses = await db.select()
+        .from(courses)
+        .where(eq(courses.userEmail, userEmail || ""))
+        .orderBy(desc(courses.createdAt));
 
     return (
         <div className="min-h-screen bg-slate-50">

@@ -43,7 +43,7 @@ export async function generateCourseStructure(topic: string, level: string, dura
 export async function generateChapterContent(chapterName: string, courseTitle: string) {
     const prompt = `
         Explain the chapter "${chapterName}" for the course "${courseTitle}".
-        Provide detailed theoretical content, key concepts, a summary, and learning outcomes.
+        Provide detailed theoretical content, key concepts, a summary, learning outcomes, and 5 Multiple Choice Questions (MCQs) for testing knowledge.
         
         Return a strictly valid JSON object:
         {
@@ -51,7 +51,14 @@ export async function generateChapterContent(chapterName: string, courseTitle: s
             "theory": "Detailed explanation as HTML string (use <h3>, <p>, <ul>, <li> tags for formatting)",
             "keyConcepts": ["Concept 1", "Concept 2"],
             "summary": "Concise summary",
-            "outcomes": ["Outcome 1", "Outcome 2"]
+            "outcomes": ["Outcome 1", "Outcome 2"],
+            "questions": [
+                {
+                    "question": "The question text",
+                    "options": ["Option A", "Option B", "Option C", "Option D"],
+                    "answer": "The correct option text"
+                }
+            ]
         }
         Ensure the JSON is clean and plain text, no markdown backticks.
     `;

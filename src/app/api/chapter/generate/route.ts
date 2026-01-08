@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         const content = await generateChapterContent(chapter[0].name, course[0].name);
 
         // Fetch Video - Simplified search query for better relevance
-        const searchQuery = `${chapter[0].name} ${course[0].name} tutorial`;
+        const searchQuery = `${chapter[0].name} ${course[0].name}`;
         console.log("Searching YouTube for:", searchQuery);
         const videos = await searchVideos(searchQuery, 1);
         const videoId = videos.length > 0 ? videos[0].videoId : null;

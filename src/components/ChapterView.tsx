@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, CheckCircle, Lightbulb, GraduationCap, VideoOff, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle, Lightbulb, GraduationCap, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface ChapterDetails {
@@ -15,6 +15,11 @@ interface ChapterDetails {
     keyConcepts?: string[];
     summary: string;
     outcomes?: string[];
+    questions?: {
+      question: string;
+      options: string[];
+      answer: string;
+    }[];
   } | null;
   videoId: string | null;
 }
@@ -38,6 +43,8 @@ export default function ChapterView({
 }) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [showResults, setShowResults] = useState(false);
   const router = useRouter();
 
   /* ✅ Mounted state to avoid hydration mismatch */
@@ -125,22 +132,20 @@ export default function ChapterView({
     <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-20">
       {/* 🎥 Video Section */}
       <div className="bg-black rounded-2xl overflow-hidden shadow-xl aspect-video relative group border border-slate-800">
-        {embedUrl ? (
-          <div className="absolute inset-0 w-full h-full">
-            <iframe
-              src={embedUrl}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              title={content.title}
-            ></iframe>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center w-full h-full gap-3 text-slate-400">
-            <VideoOff size={48} strokeWidth={1.5} />
-            <span className="font-medium">No video tutorial available</span>
-          </div>
-        )}
+        <div className="absolute inset-0 w-full h-full">
+          <iframe
+            src={
+              embedUrl ||
+              `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(
+                `${chapter.name} ${course.name}`
+              )}`
+            }
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            title={content.title}
+          ></iframe>
+        </div>
       </div>
 
       {watchUrl && (
@@ -206,13 +211,99 @@ export default function ChapterView({
 
         {/* Summary */}
         <div className="bg-blue-50/50 p-8 rounded-2xl border border-blue-100/50">
-          <h3 className="font-bold text-xl mb-3 text-blue-900">
-            Summary
-          </h3>
           <p className="text-blue-900/70 leading-relaxed text-lg">
             {content.summary}
           </p>
         </div>
+
+        {/* 📝 Quiz Section */}
+        {content.questions && content.questions.length > 0 && (
+          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-slate-100 mt-8">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                <GraduationCap size={24} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900">Chapter Quiz</h3>
+                <p className="text-slate-500 text-sm">Test your knowledge of this chapter</p>
+              </div>
+            </div>
+
+            <div className="space-y-10">
+              {content.questions.map((q, qIndex) => (
+                <div key={qIndex} className="space-y-4">
+                  <h4 className="font-bold text-lg text-slate-800 flex gap-3">
+                    <span className="text-slate-300">0{qIndex + 1}.</span>
+                    {q.question}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {q.options.map((option, optIndex) => {
+                      const isSelected = userAnswers[qIndex] === option;
+                      const isCorrect = option === q.answer;
+                      const showFeedback = showResults;
+
+                      let buttonClass = "p-4 rounded-xl border text-left transition-all font-medium flex justify-between items-center group ";
+
+                      if (!showFeedback) {
+                        buttonClass += isSelected
+                          ? "border-primary bg-primary/5 text-primary shadow-sm"
+                          : "border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-600";
+                      } else {
+                        if (isCorrect) {
+                          buttonClass += "border-emerald-500 bg-emerald-50 text-emerald-700";
+                        } else if (isSelected && !isCorrect) {
+                          buttonClass += "border-red-500 bg-red-50 text-red-700";
+                        } else {
+                          buttonClass += "border-slate-100 opacity-50 text-slate-400";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={optIndex}
+                          disabled={showResults}
+                          onClick={() => setUserAnswers({ ...userAnswers, [qIndex]: option })}
+                          className={buttonClass}
+                        >
+                          {option}
+                          {showFeedback && isCorrect && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 flex flex-col items-center gap-6 border-t border-slate-50 pt-10">
+              {!showResults ? (
+                <button
+                  onClick={() => setShowResults(true)}
+                  disabled={Object.keys(userAnswers).length < content.questions.length}
+                  className="bg-slate-900 text-white px-10 py-3.5 rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-200"
+                >
+                  Check Your Answers
+                </button>
+              ) : (
+                <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="text-4xl font-black mb-2 text-slate-900">
+                    {Object.entries(userAnswers).filter(([idx, ans]) => ans === content.questions![Number(idx)].answer).length} / {content.questions.length}
+                  </div>
+                  <p className="text-slate-500 font-medium mb-6">Your Final Score</p>
+                  <button
+                    onClick={() => {
+                      setShowResults(false);
+                      setUserAnswers({});
+                    }}
+                    className="text-primary font-bold hover:underline"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 🔁 Navigation */}
